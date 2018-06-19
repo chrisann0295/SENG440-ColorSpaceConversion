@@ -67,13 +67,38 @@ int main(int argc, char *argv[]) {
       int temp;
       fscanf(fp, "%d", &temp);
       if(j < width)
-        r[i][j%3] = (uint8_t)temp;
+        r[i][j % width] = (uint8_t)temp;
       else if(j < (2*width))
-        g[i][j%3] = (uint8_t)temp;       
+        g[i][j % width] = (uint8_t)temp;       
       else
-        b[i][j%3] = (uint8_t)temp;
+        b[i][j % width] = (uint8_t)temp;
     }
   }
+
+
+  //DEBUG
+  // FILE *fr = fopen("R.txt", "w");
+  // FILE *fg = fopen("G.txt", "w");
+  // FILE *fb = fopen("B.txt", "w");
+
+  // for(i = 0; i < height; i++){
+  //   for(j=0; j < width; j++){
+  //     fprintf(fr, "%d ", r[i][j]);
+  //   }
+  //   fprintf(fr, "\n");
+  // }
+  // for(i = 0; i < height; i++){
+  //   for(j=0; j < width; j++){
+  //     fprintf(fb, "%d ", b[i][j]);
+  //   }
+  //   fprintf(fb, "\n");
+  // }
+  // for(i = 0; i < height; i++){
+  //   for(j=0; j < width; j++){
+  //     fprintf(fg, "%d ", g[i][j]);
+  //   }
+  //   fprintf(fg, "\n");
+  // }
 
   // allocate memory to ycc arrays
   // TODO: REDUCE SIZE
@@ -113,6 +138,9 @@ int main(int argc, char *argv[]) {
   //     printf("B[%d][%d]: %d\n", i, j, b[i][j]);
   //   }
   // }
+
+
+
   FILE *fdy = fopen("y.txt", "w");
   FILE *fdcb = fopen("cb.txt", "w");
   FILE *fdcr = fopen("cr.txt", "w");
