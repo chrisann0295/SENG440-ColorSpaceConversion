@@ -76,6 +76,7 @@ int main(int argc, char *argv[]) {
   }
 
   // allocate memory to ycc arrays
+  // TODO: REDUCE SIZE
   int **y = malloc(height * sizeof(uint8_t *));
   int **cb = malloc(height * sizeof(uint8_t *));
   int **cr = malloc(height * sizeof(uint8_t *));
@@ -86,14 +87,16 @@ int main(int argc, char *argv[]) {
   }
 
   // calculate and store ycc values
+  // TODO: USE AVERAGES
+  // REDUCE CACHE MISSES: https://m.eet.com/media/1157397/atc-152paper_shore_v4.pdf
   for(i = 0; i < height; i++){
-    for(j=0; j < width * 3; j++){
+    for(j=0; j < width; j++){
       y[i][j]  = ( 0.299 * r[i][j] + 0.587 * g[i][j] + 0.114 * b[i][j]);
       cb[i][j] = (-0.16874 * r[i][j] - 0.33126 * g[i][j] + 0.50000 * b[i][j]);
       cr[i][j] = ( 0.50000 * r[i][j] - 0.41869 * g[i][j] - 0.08131 * b[i][j]);
     }
   }
-  
+
   //DEBUG
   // for(i = 0; i < height; i++){
   //   for(j=0; j < width; j++){
@@ -110,23 +113,28 @@ int main(int argc, char *argv[]) {
   //     printf("B[%d][%d]: %d\n", i, j, b[i][j]);
   //   }
   // }
+  FILE *fdy = fopen("y.txt", "w");
+  FILE *fdcb = fopen("cb.txt", "w");
+  FILE *fdcr = fopen("cr.txt", "w");
 
-  //DEBUG
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     printf("R[%d][%d]: %d\n", i, j, y[i][j]);
-  //   }
-  // }
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     printf("G[%d][%d]: %d\n", i, j, cb[i][j]);
-  //   }
-  // }
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     printf("B[%d][%d]: %d\n", i, j, cr[i][j]);
-  //   }
-  // }
+  for(i = 0; i < height; i++){
+    for(j=0; j < width; j++){
+      fprintf(fdy, "%d ", y[i][j]);
+    }
+    fprintf(fdy, "\n");
+  }
+  for(i = 0; i < height; i++){
+    for(j=0; j < width; j++){
+      fprintf(fdcb, "%d ", cb[i][j]);
+    }
+    fprintf(fdcb, "\n");
+  }
+  for(i = 0; i < height; i++){
+    for(j=0; j < width; j++){
+      fprintf(fdcr, "%d ", cr[i][j]);
+    }
+    fprintf(fdcr, "\n");
+  }
 
   fclose(fp);
 
