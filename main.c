@@ -3,6 +3,28 @@
 #include <unistd.h>
 #include <string.h> 
 
+// int * average(int x, int y, int **r, int **g, int **b, int h, int w){
+//   int avg[3] = {0, 0, 0};
+//   int i, j;
+//   int count = 0;
+
+//   for(i = x - 1; i < x + 1; i++) {
+//     for(j = y - 1; j < y + 1; j++) {
+//       if(i < 0 || i >= w|| j < 0 || j >= h)
+//         continue;
+//        avg[0] = avg[0] + r[i][j];
+//        g = g + g[i][j];
+//        b = b + b[i][j];
+//        count++;
+//     }
+//   }
+//   int avg[3];
+//   avg[0] = r/count;
+//   avg[1] = g/count;
+//   avg[2] = b/count; 
+//   return avg;
+// }
+
 int main(int argc, char *argv[]) {
   FILE * fp;
   fp = fopen(argv[1], "r");
@@ -77,28 +99,28 @@ int main(int argc, char *argv[]) {
 
 
   //DEBUG
-  // FILE *fr = fopen("R.txt", "w");
-  // FILE *fg = fopen("G.txt", "w");
-  // FILE *fb = fopen("B.txt", "w");
+  FILE *fr = fopen("R.txt", "w");
+  FILE *fg = fopen("G.txt", "w");
+  FILE *fb = fopen("B.txt", "w");
 
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     fprintf(fr, "%d ", r[i][j]);
-  //   }
-  //   fprintf(fr, "\n");
-  // }
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     fprintf(fb, "%d ", b[i][j]);
-  //   }
-  //   fprintf(fb, "\n");
-  // }
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     fprintf(fg, "%d ", g[i][j]);
-  //   }
-  //   fprintf(fg, "\n");
-  // }
+  for(i = 0; i < height; i++){
+    for(j=0; j < width; j++){
+      fprintf(fr, "%d ", r[i][j]);
+    }
+    fprintf(fr, "\n");
+  }
+  for(i = 0; i < height; i++){
+    for(j=0; j < width; j++){
+      fprintf(fb, "%d ", b[i][j]);
+    }
+    fprintf(fb, "\n");
+  }
+  for(i = 0; i < height; i++){
+    for(j=0; j < width; j++){
+      fprintf(fg, "%d ", g[i][j]);
+    }
+    fprintf(fg, "\n");
+  }
 
   // allocate memory to ycc arrays
   // TODO: REDUCE SIZE
@@ -116,9 +138,9 @@ int main(int argc, char *argv[]) {
   // REDUCE CACHE MISSES: https://m.eet.com/media/1157397/atc-152paper_shore_v4.pdf
   for(i = 0; i < height; i++){
     for(j=0; j < width; j++){
-      y[i][j]  = ( 0.299 * r[i][j] + 0.587 * g[i][j] + 0.114 * b[i][j]);
-      cb[i][j] = (-0.16874 * r[i][j] - 0.33126 * g[i][j] + 0.50000 * b[i][j]);
-      cr[i][j] = ( 0.50000 * r[i][j] - 0.41869 * g[i][j] - 0.08131 * b[i][j]);
+      y[i][j]  = ( 65.481 * r[i][j] + 128.5553 * g[i][j] + 24.966 * b[i][j])/255 + 16;
+      cb[i][j] = (-37.797 * r[i][j] - 74.203 * g[i][j] + 112.0 * b[i][j])/255 + 128;
+      cr[i][j] = ( 112.0 * r[i][j] - 93.786 * g[i][j] - 18.214 * b[i][j])/255 + 128;
     }
   }
 
