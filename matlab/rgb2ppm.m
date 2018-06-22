@@ -3,6 +3,8 @@ OUTPUT_FILE = 'image.txt';
 
 RGB = imread(INPUT_FILE);
 
+[num_rows, num_cols, num_dim] = size(RGB);
+
 fileID = fopen(OUTPUT_FILE,'w');
 
 fprintf(fileID, 'P6\n');
