@@ -97,36 +97,35 @@ int main(int argc, char *argv[]) {
     }
   }
 
-
   //DEBUG
-  FILE *fr = fopen("R.txt", "w");
-  FILE *fg = fopen("G.txt", "w");
-  FILE *fb = fopen("B.txt", "w");
+  // FILE *fr = fopen("R.txt", "w");
+  // FILE *fg = fopen("G.txt", "w");
+  // FILE *fb = fopen("B.txt", "w");
 
-  for(i = 0; i < height; i++){
-    for(j=0; j < width; j++){
-      fprintf(fr, "%d ", r[i][j]);
-    }
-    fprintf(fr, "\n");
-  }
-  for(i = 0; i < height; i++){
-    for(j=0; j < width; j++){
-      fprintf(fb, "%d ", b[i][j]);
-    }
-    fprintf(fb, "\n");
-  }
-  for(i = 0; i < height; i++){
-    for(j=0; j < width; j++){
-      fprintf(fg, "%d ", g[i][j]);
-    }
-    fprintf(fg, "\n");
-  }
+  // for(i = 0; i < height; i++){
+  //   for(j=0; j < width; j++){
+  //     fprintf(fr, "%d ", r[i][j]);
+  //   }
+  //   fprintf(fr, "\n");
+  // }
+  // for(i = 0; i < height; i++){
+  //   for(j=0; j < width; j++){
+  //     fprintf(fb, "%d ", b[i][j]);
+  //   }
+  //   fprintf(fb, "\n");
+  // }
+  // for(i = 0; i < height; i++){
+  //   for(j=0; j < width; j++){
+  //     fprintf(fg, "%d ", g[i][j]);
+  //   }
+  //   fprintf(fg, "\n");
+  // }
 
   // allocate memory to ycc arrays
   // TODO: REDUCE SIZE
-  int **y = malloc(height * sizeof(uint8_t *));
-  int **cb = malloc(height * sizeof(uint8_t *));
-  int **cr = malloc(height * sizeof(uint8_t *));
+  uint8_t **y = malloc(height * sizeof(uint8_t *));
+  uint8_t **cb = malloc(height * sizeof(int8_t *));
+  uint8_t **cr = malloc(height * sizeof(int8_t *));
   for (i=0; i < height; i++) {
     y[i] = malloc(width * sizeof(uint8_t));
     cb[i] = malloc(width * sizeof(uint8_t));
@@ -134,13 +133,13 @@ int main(int argc, char *argv[]) {
   }
 
   // calculate and store ycc values
-  // TODO: USE AVERAGES
   // REDUCE CACHE MISSES: https://m.eet.com/media/1157397/atc-152paper_shore_v4.pdf
   for(i = 0; i < height; i++){
     for(j=0; j < width; j++){
-      y[i][j]  = ( 65.481 * r[i][j] + 128.5553 * g[i][j] + 24.966 * b[i][j])/255 + 16;
-      cb[i][j] = (-37.797 * r[i][j] - 74.203 * g[i][j] + 112.0 * b[i][j])/255 + 128;
-      cr[i][j] = ( 112.0 * r[i][j] - 93.786 * g[i][j] - 18.214 * b[i][j])/255 + 128;
+      // use a scale factor of 255
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      cb[i][j] = ((-38 * r[i][j] - 75 * g[i][j] + 112 * b[i][j]) >> 8) + 128; 
+      cr[i][j] = ((112 * r[i][j] - 94 * g[i][j] - 18 * b[i][j]) >> 8) + 128;
     }
   }
 
@@ -160,8 +159,6 @@ int main(int argc, char *argv[]) {
   //     printf("B[%d][%d]: %d\n", i, j, b[i][j]);
   //   }
   // }
-
-
 
   FILE *fdy = fopen("y.txt", "w");
   FILE *fdcb = fopen("cb.txt", "w");
