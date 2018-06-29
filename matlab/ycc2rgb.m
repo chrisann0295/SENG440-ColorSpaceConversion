@@ -24,6 +24,9 @@ YCBCR = cat(3, Y, Cb, Cr);
 % Convert YCC to RGB
 RGB = ycbcr2rgb(YCBCR);
 
+% Save image to file
+imwrite(RGB, OUTPUT_IMAGE);
+
 % Show the image
 figure
 subplot(1,2,1)
