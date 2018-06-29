@@ -3,28 +3,6 @@
 #include <unistd.h>
 #include <string.h> 
 
-// int * average(int x, int y, int **r, int **g, int **b, int h, int w){
-//   int avg[3] = {0, 0, 0};
-//   int i, j;
-//   int count = 0;
-
-//   for(i = x - 1; i < x + 1; i++) {
-//     for(j = y - 1; j < y + 1; j++) {
-//       if(i < 0 || i >= w|| j < 0 || j >= h)
-//         continue;
-//        avg[0] = avg[0] + r[i][j];
-//        g = g + g[i][j];
-//        b = b + b[i][j];
-//        count++;
-//     }
-//   }
-//   int avg[3];
-//   avg[0] = r/count;
-//   avg[1] = g/count;
-//   avg[2] = b/count; 
-//   return avg;
-// }
-
 int main(int argc, char *argv[]) {
   FILE * fp;
   fp = fopen(argv[1], "r");
@@ -97,68 +75,64 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  //DEBUG
-  // FILE *fr = fopen("R.txt", "w");
-  // FILE *fg = fopen("G.txt", "w");
-  // FILE *fb = fopen("B.txt", "w");
-
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     fprintf(fr, "%d ", r[i][j]);
-  //   }
-  //   fprintf(fr, "\n");
+  /* --------- ORIGINAL CODE: allocate memory to ycc arrays ----------*/
+  // uint8_t **y = malloc(height * sizeof(uint8_t *));
+  // uint8_t **cb = malloc(height * sizeof(int8_t *));
+  // uint8_t **cr = malloc(height * sizeof(int8_t *));
+  // for (i=0; i < height; i++) {
+  //   y[i] = malloc(width * sizeof(uint8_t));
+    // cb[i] = malloc(width * sizeof(uint8_t));
+    // cr[i] = malloc(width * sizeof(uint8_t));
   // }
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     fprintf(fb, "%d ", b[i][j]);
-  //   }
-  //   fprintf(fb, "\n");
-  // }
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     fprintf(fg, "%d ", g[i][j]);
-  //   }
-  //   fprintf(fg, "\n");
-  // }
-
-  // allocate memory to ycc arrays
-  // TODO: REDUCE SIZE
-  uint8_t **y = malloc(height * sizeof(uint8_t *));
-  uint8_t **cb = malloc(height * sizeof(int8_t *));
-  uint8_t **cr = malloc(height * sizeof(int8_t *));
-  for (i=0; i < height; i++) {
-    y[i] = malloc(width * sizeof(uint8_t));
-    cb[i] = malloc(width * sizeof(uint8_t));
-    cr[i] = malloc(width * sizeof(uint8_t));
-  }
 
   // calculate and store ycc values
   // REDUCE CACHE MISSES: https://m.eet.com/media/1157397/atc-152paper_shore_v4.pdf
-  for(i = 0; i < height; i++){
-    for(j=0; j < width; j++){
+  // for(i = 0; i < height; i++){
+  //   for(j=0; j < width; j++){
       // use a scale factor of 255
-      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      cb[i][j] = ((-38 * r[i][j] - 75 * g[i][j] + 112 * b[i][j]) >> 8) + 128; 
-      cr[i][j] = ((112 * r[i][j] - 94 * g[i][j] - 18 * b[i][j]) >> 8) + 128;
+      // y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      // cb[i][j] = ((-38 * r[i][j] - 75 * g[i][j] + 112 * b[i][j]) >> 8) + 128; 
+      // cr[i][j] = ((112 * r[i][j] - 94 * g[i][j] - 18 * b[i][j]) >> 8) + 128;
+
+      //float arithmatic
+      // y[i][j]  = ( 65.481 * r[i][j] + 128.5553 * g[i][j] + 24.966 * b[i][j])/255 + 16;
+      // cb[i][j] = (-37.797 * r[i][j] - 74.203 * g[i][j] + 112.0 * b[i][j])/255 + 128;
+      // cr[i][j] = ( 112.0 * r[i][j] - 93.786 * g[i][j] - 18.214 * b[i][j])/255 + 128;
+    // }
+  // }
+  /* --------- END ORIGINAL CODE ----------*/
+
+  /* --------- DOWNSAMPLING CODE: allocate memory to ycc arrays ----------*/
+
+  int ds_height = height/2;
+  int ds_width = width/2;
+  uint8_t **y = malloc(height * sizeof(uint8_t *));
+  uint8_t **cb = malloc(ds_height * sizeof(int8_t *));
+  uint8_t **cr = malloc(ds_height * sizeof(int8_t *));
+  for (i=0; i < height; i++) {
+    y[i] = malloc(width * sizeof(uint8_t));
+    if (i < ds_height) {
+      cb[i] = malloc(ds_width * sizeof(uint8_t));
+      cr[i] = malloc(ds_width * sizeof(uint8_t));
     }
   }
 
-  //DEBUG
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     printf("R[%d][%d]: %d\n", i, j, r[i][j]);
-  //   }
-  // }
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     printf("G[%d][%d]: %d\n", i, j, g[i][j]);
-  //   }
-  // }
-  // for(i = 0; i < height; i++){
-  //   for(j=0; j < width; j++){
-  //     printf("B[%d][%d]: %d\n", i, j, b[i][j]);
-  //   }
-  // }
+  int u = 0;
+  int v = 0;
+  for(i = 0; i < height; i++){
+    for(j=0; j < width; j++){
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      if((i % 2 == 0) && (j % 2 == 0) && u < ds_height && v < ds_width) {
+        cb[u][v] = ((-38 * r[i][j] - 75 * g[i][j] + 112 * b[i][j]) >> 8) + 128; 
+        cr[u][v] = ((112 * r[i][j] - 94 * g[i][j] - 18 * b[i][j]) >> 8) + 128;
+        v++;
+      }
+    }
+    v = 0;
+    if(i % 2 == 0)
+      u++;
+  }
+  /* --------- END DOWNSAMPLING CODE ----------*/
 
   FILE *fdy = fopen("y.txt", "w");
   FILE *fdcb = fopen("cb.txt", "w");
@@ -170,14 +144,14 @@ int main(int argc, char *argv[]) {
     }
     fprintf(fdy, "\n");
   }
-  for(i = 0; i < height; i++){
-    for(j=0; j < width; j++){
+  for(i = 0; i < ds_height; i++){
+    for(j=0; j < ds_width; j++){
       fprintf(fdcb, "%d ", cb[i][j]);
     }
     fprintf(fdcb, "\n");
   }
-  for(i = 0; i < height; i++){
-    for(j=0; j < width; j++){
+  for(i = 0; i < ds_height; i++){
+    for(j=0; j < ds_width; j++){
       fprintf(fdcr, "%d ", cr[i][j]);
     }
     fprintf(fdcr, "\n");
@@ -190,9 +164,11 @@ int main(int argc, char *argv[]) {
     free(g[i]);
     free(b[i]);      
     
-    free(y[i]);      
-    free(cb[i]);      
-    free(cr[i]);      
+    free(y[i]);
+    if (i < ds_height) {  
+      free(cb[i]);      
+      free(cr[i]);      
+    }
   }
   free(r);
   free(g);
