@@ -102,8 +102,7 @@ int main(int argc, char *argv[]) {
   // }
   /* --------- END ORIGINAL CODE ----------*/
 
-  /* --------- DOWNSAMPLING CODE ----------*/
-
+  /* --------- DOWNSAMPLING CODE (Discarding values) ----------*/
   int ds_height = height/2;
   int ds_width = width/2;
   uint8_t **y = malloc(height * sizeof(uint8_t *));
@@ -134,28 +133,80 @@ int main(int argc, char *argv[]) {
   }
   /* --------- END DOWNSAMPLING CODE ----------*/
 
+
+  /* --------- DOWNSAMPLING BY AVG CODE  (Averaging 9 values) ----------*/
+  int ds_avg_height = height/2;
+  int ds_avg_width = width/2;
+
+  // allocating arrays
+  uint8_t **avg_y = malloc(ds_avg_height * sizeof(uint8_t *));
+  uint8_t **avg_cb = malloc(ds_avg_height * sizeof(int8_t *));
+  uint8_t **avg_cr = malloc(ds_avg_height * sizeof(int8_t *));
+  for (i=0; i < ds_avg_height; i++) {
+    avg_y[i] = malloc(ds_avg_width * sizeof(uint8_t));
+    if (i < ds_avg_height) {
+      avg_cb[i] = malloc(ds_avg_width * sizeof(uint8_t));
+      avg_cr[i] = malloc(ds_avg_width * sizeof(uint8_t));
+    }
+  }
+
+  int new_row = 0;
+  int new_col = 0;
+  uint8_t avg_r = 0;
+  uint8_t avg_g = 0;
+  uint8_t avg_b = 0;
+
+  i = 0;
+  j = 0;
+  while(i + 2 < height) {
+    while(j + 2 < width) {
+      avg_y[new_row][new_col]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+
+      // average within a 3x3 window
+      avg_r = (r[i][j] + r[i][j+1] + r[i][j+2] + r[i+1][j] + r[i+1][j+1] + r[i+1][j+2] + r[i+2][j] + r[i+2][j+1] + r[i+2][j+2])/9;
+      avg_g = (g[i][j] + g[i][j+1] + g[i][j+2] + g[i+1][j] + g[i+1][j+1] + g[i+1][j+2] + g[i+2][j] + g[i+2][j+1] + g[i+2][j+2])/9;
+      avg_b = (b[i][j] + b[i][j+1] + b[i][j+2] + b[i+1][j] + b[i+1][j+1] + b[i+1][j+2] + b[i+2][j] + b[i+2][j+1] + b[i+2][j+2])/9;
+
+      avg_cb[new_row][new_col] = ((-38 * avg_r - 75 * avg_g + 112 * avg_b) >> 8) + 128; 
+      avg_cr[new_row][new_col] = ((112 * avg_r - 94 * avg_g - 18 * avg_b) >> 8) + 128;
+
+      // move window by 2 slots for a smaller image size
+      j = j+2;
+      new_col++;
+    }
+
+    j = 0;
+    new_col = 0;
+    new_row++;
+    i = i+2;
+  }
+  /* --------- END DOWNSAMPLING BY AVG CODE ----------*/
+  
+  /* --------- WRITE THE DOWNSAMPLED (BY AVG) VALUES TO YCC FILES ----------*/
   FILE *fdy = fopen("y.txt", "w");
   FILE *fdcb = fopen("cb.txt", "w");
   FILE *fdcr = fopen("cr.txt", "w");
 
-  for(i = 0; i < height; i++){
-    for(j=0; j < width; j++){
-      fprintf(fdy, "%d ", y[i][j]);
+  for(i = 0; i < ds_avg_height; i++){
+    for(j=0; j < ds_avg_width; j++){
+      fprintf(fdy, "%d ", avg_y[i][j]);
     }
     fprintf(fdy, "\n");
   }
-  for(i = 0; i < ds_height; i++){
-    for(j=0; j < ds_width; j++){
-      fprintf(fdcb, "%d ", cb[i][j]);
+  for(i = 0; i < ds_avg_height; i++){
+    for(j=0; j < ds_avg_width; j++){
+      fprintf(fdcb, "%d ", avg_cb[i][j]);
     }
     fprintf(fdcb, "\n");
   }
-  for(i = 0; i < ds_height; i++){
-    for(j=0; j < ds_width; j++){
-      fprintf(fdcr, "%d ", cr[i][j]);
+  for(i = 0; i < ds_avg_height; i++){
+    for(j=0; j < ds_avg_width; j++){
+      fprintf(fdcr, "%d ", avg_cr[i][j]);
     }
     fprintf(fdcr, "\n");
   }
+
+  /* --------- END WRITING THE DOWNSAMPLED (BY AVG) VALUES TO YCC FILES ----------*/
 
   fclose(fp);
 
@@ -178,3 +229,50 @@ int main(int argc, char *argv[]) {
   free(cb);
   free(cr);
 }
+
+/* --------- WRITE THE DOWNSAMPLED VALUES TO YCC FILES ----------*/
+//   FILE *fdy = fopen("y.txt", "w");
+//   FILE *fdcb = fopen("cb.txt", "w");
+//   FILE *fdcr = fopen("cr.txt", "w");
+
+//   for(i = 0; i < height; i++){
+//     for(j=0; j < width; j++){
+//       fprintf(fdy, "%d ", y[i][j]);
+//     }
+//     fprintf(fdy, "\n");
+//   }
+//   for(i = 0; i < ds_height; i++){
+//     for(j=0; j < ds_width; j++){
+//       fprintf(fdcb, "%d ", cb[i][j]);
+//     }
+//     fprintf(fdcb, "\n");
+//   }
+//   for(i = 0; i < ds_height; i++){
+//     for(j=0; j < ds_width; j++){
+//       fprintf(fdcr, "%d ", cr[i][j]);
+//     }
+//     fprintf(fdcr, "\n");
+//   }
+
+//   fclose(fp);
+
+//   for(i = 0; i < height; i++){
+//     free(r[i]);  
+//     free(g[i]);
+//     free(b[i]);      
+    
+//     free(y[i]);
+//     if (i < ds_height) {  
+//       free(cb[i]);      
+//       free(cr[i]);      
+//     }
+//   }
+//   free(r);
+//   free(g);
+//   free(b);
+  
+//   free(y);
+//   free(cb);
+//   free(cr);
+// }
+/* --------- END WRITING THE DOWNSAMPLED VALUES TO YCC FILES ----------*/
