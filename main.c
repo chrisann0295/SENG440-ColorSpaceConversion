@@ -53,12 +53,12 @@ int main(int argc, char *argv[]) {
   // allocate memory to rgb arrays
   register int i;
   int heightsize = height * sizeof(uint8_t *);
-  int temp = height - (height & 1);
+  int tempwidth = height - (height & 1);
   int rowsize = width * sizeof(uint8_t *);
   uint8_t **r = malloc(heightsize);
   uint8_t **g = malloc(heightsize);
   uint8_t **b = malloc(heightsize);
-  for (i=0; i < temp; i++) {
+  for (i=0; i < tempwidth; i++) {
     r[i] = malloc(rowsize);
     g[i] = malloc(rowsize);
     b[i] = malloc(rowsize);
@@ -74,17 +74,31 @@ int main(int argc, char *argv[]) {
   }
 
   // read in values
-  int j, pixel;
+  int j;
+  tempwidth = ((width >> 2) << 2) - 2;
   for(i = 0; i < height; i++){
-    for(j=0; j < width * 3; j++){
-      int temp;
-      fscanf(fp, "%d", &temp);
-      if(j < width)
-        r[i][j % width] = (uint8_t)temp;
-      else if(j < (2*width))
-        g[i][j % width] = (uint8_t)temp;       
-      else
-        b[i][j % width] = (uint8_t)temp;
+    // R
+    for (j = 0; j < tempwidth; j += 4){
+      fscanf(fp, "%d%d%d%d", &r[i][j], &r[i][j+1], &r[i][j+2], &r[i][j+3]);
+    }
+    for (; j < width; j++) {
+      fscanf(fp, "%d", &r[i][j]);
+    }
+
+    // G
+    for(j = 0; j < tempwidth; j += 4){
+      fscanf(fp, "%d%d%d%d", &g[i][j], &g[i][j+1], &g[i][j+2], &g[i][j+3]);
+    }
+    for (; j < width; j++) {
+      fscanf(fp, "%d", &g[i][j]);
+    }
+
+    // B
+    for(j = 0; j < tempwidth; j += 4){
+      fscanf(fp, "%d%d%d%d", &b[i][j], &b[i][j+1], &b[i][j+2], &b[i][j+3]);
+    }
+    for (; j < width; j++) {
+      fscanf(fp, "%d", &b[i][j]);
     }
   }
 
