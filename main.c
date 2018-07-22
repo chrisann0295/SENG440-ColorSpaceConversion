@@ -51,30 +51,43 @@ int main(int argc, char *argv[]) {
   }
 
   // allocate memory to rgb arrays
-  register int i;
-  int heightsize = height * sizeof(uint8_t *);
-  int tempwidth = height - (height & 1);
+  register int i, j;
+  int colsize = height * sizeof(uint8_t *);
   int rowsize = width * sizeof(uint8_t *);
-  uint8_t **r = malloc(heightsize);
-  uint8_t **g = malloc(heightsize);
-  uint8_t **b = malloc(heightsize);
-  for (i=0; i < tempwidth; i++) {
+  int tempwidth = height - (height & 1);
+  int ds_height = height >> 1;
+  int ds_width = width >> 1;
+  int ds_colsize = colsize >> 1;
+  int ds_rowsize = rowsize >> 1;
+  uint8_t **r = malloc(colsize);
+  uint8_t **g = malloc(colsize);
+  uint8_t **b = malloc(colsize);
+  uint8_t **y = malloc(colsize);
+  uint8_t **cb = malloc(ds_colsize);
+  uint8_t **cr = malloc(ds_colsize);
+  for (i = 0, j = 0; i < tempwidth; i++) {
     r[i] = malloc(rowsize);
     g[i] = malloc(rowsize);
     b[i] = malloc(rowsize);
+    y[i] = malloc(rowsize);
     i++;
+    cb[j] = malloc(ds_rowsize);
+    cr[j] = malloc(ds_rowsize);
+    j++;
+
     r[i] = malloc(rowsize);
     g[i] = malloc(rowsize);
     b[i] = malloc(rowsize);
+    y[i] = malloc(rowsize);
   }
   if (height & 1) {
     r[i] = malloc(rowsize);
     g[i] = malloc(rowsize);
     b[i] = malloc(rowsize);
+    y[i] = malloc(rowsize);
   }
 
   // read in values
-  int j;
   tempwidth = ((width >> 2) << 2) - 2;
   for(i = 0; i < height; i++){
     // R
@@ -103,19 +116,6 @@ int main(int argc, char *argv[]) {
   }
 
   /* --------- DOWNSAMPLING CODE ----------*/
-
-  int ds_height = height/2;
-  int ds_width = width/2;
-  uint8_t **y = malloc(height * sizeof(uint8_t *));
-  uint8_t **cb = malloc(ds_height * sizeof(int8_t *));
-  uint8_t **cr = malloc(ds_height * sizeof(int8_t *));
-  for (i=0; i < height; i++) {
-    y[i] = malloc(width * sizeof(uint8_t));
-    if (i < ds_height) {
-      cb[i] = malloc(ds_width * sizeof(uint8_t));
-      cr[i] = malloc(ds_width * sizeof(uint8_t));
-    }
-  }
 
   int u = 0;
   int v = 0;
