@@ -51,14 +51,26 @@ int main(int argc, char *argv[]) {
   }
 
   // allocate memory to rgb arrays
-  int i;
+  int i, temp;
+  temp = height - (height & 1);
+  printf("temp = %d\n", temp);
   uint8_t **r = malloc(height * sizeof(uint8_t *));
   uint8_t **g = malloc(height * sizeof(uint8_t *));
   uint8_t **b = malloc(height * sizeof(uint8_t *));
-  for (i=0; i < height; i++) {
+  for (i=0; i < temp; i++) {
     r[i] = malloc(width * sizeof(uint8_t));
     g[i] = malloc(width * sizeof(uint8_t));
     b[i] = malloc(width * sizeof(uint8_t));
+    i++;
+    r[i] = malloc(width * sizeof(uint8_t));
+    g[i] = malloc(width * sizeof(uint8_t));
+    b[i] = malloc(width * sizeof(uint8_t));
+  }
+  printf("i = %d\n", i);
+  if (height & 1) {
+    r[temp] = malloc(width * sizeof(uint8_t));
+    g[temp] = malloc(width * sizeof(uint8_t));
+    b[temp] = malloc(width * sizeof(uint8_t));
   }
 
   // read in values
