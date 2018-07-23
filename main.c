@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
   register int i, j;
   int colsize = height * sizeof(uint8_t *);
   int rowsize = width * sizeof(uint8_t *);
-  int tempwidth = height - (height & 1);
+  int tempheight = height - (height & 1);
   int ds_height = height >> 1;
   int ds_width = width >> 1;
   int ds_colsize = colsize >> 1;
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
   uint8_t **y = malloc(colsize);
   uint8_t **cb = malloc(ds_colsize);
   uint8_t **cr = malloc(ds_colsize);
-  for (i = 0, j = 0; i < tempwidth; i++) {
+  for (i = 0, j = 0; i < tempheight; i++) {
     r[i] = malloc(rowsize);
     g[i] = malloc(rowsize);
     b[i] = malloc(rowsize);
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
   }
 
   // read in values
-  tempwidth = ((width >> 2) << 2) - 2;
+  int tempwidth = ((width >> 2) << 2) - 2;
   for(i = 0; i < height; i++){
     // R
     for (j = 0; j < tempwidth; j += 4){
@@ -117,21 +117,97 @@ int main(int argc, char *argv[]) {
 
   /* --------- DOWNSAMPLING CODE ----------*/
 
-  int u = 0;
-  int v = 0;
-  for(i = 0; i < height; i++){
-    for(j=0; j < width; j++){
+  tempwidth = ((width >> 3) << 3) - 6;
+  int u, v;
+  uint8_t rtmp, gtmp, btmp;
+  for (i = 0, u = 0; i < tempheight; i++) {
+    // Even rows
+    for(j = 0, v = 0; j < tempwidth; j++){
+      // Even columns
+      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
+      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
+      cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
+      cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
+      j++; v++;
+
+      // Odd columns
       y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      if((i % 2 == 0) && (j % 2 == 0) && u < ds_height && v < ds_width) {
-        cb[u][v] = ((-38 * r[i][j] - 75 * g[i][j] + 112 * b[i][j]) >> 8) + 128; 
-        cr[u][v] = ((112 * r[i][j] - 94 * g[i][j] - 18 * b[i][j]) >> 8) + 128;
-        v++;
+      j++;
+
+      // Even columns
+      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
+      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
+      cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
+      cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
+      j++; v++;
+
+      // Odd columns
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      j++;
+
+      // Even columns
+      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
+      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
+      cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
+      cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
+      j++; v++;
+
+      // Odd columns
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      j++;
+
+      // Even columns
+      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
+      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
+      cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
+      cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
+      j++; v++;
+
+      // Odd columns
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+    }
+    for (; j < width; j++) {
+      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
+      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
+      if ((j & 1) == 0) {
+        cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
+        cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
       }
     }
-    v = 0;
-    if(i % 2 == 0)
-      u++;
+    i++; u++;
+    
+    // Odd rows
+    for(j = 0; j < tempwidth; j++){
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+    }
+    for (; j < width; j++) {
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+    }
   }
+
+  if (height & 1) {
+    for(j = 0; j < tempwidth; j++){
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+    }
+    for (; j < width; j++) {
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+    }
+  }
+
   /* --------- END DOWNSAMPLING CODE ----------*/
 
   FILE *fdy = fopen("y.txt", "w");
