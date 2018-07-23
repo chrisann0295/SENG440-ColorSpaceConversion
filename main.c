@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdint.h>
+#include "arm_neon.h"
 
 int main(int argc, char *argv[]) {
   FILE * fp;
@@ -119,73 +120,85 @@ int main(int argc, char *argv[]) {
 
   tempwidth = ((width >> 3) << 3) - 6;
   int u, v;
-  uint8_t rtmp, gtmp, btmp;
+  uint8x8_t rtmp, gtmp, btmp;
+  int16x8_t ytmp, cbtmp, crtmp;
+  uint8x8_t yresult, cbresult, crresult;
+  uint8x8_t yrconst = vdup_n_u8 (66);
+  uint8x8_t ygconst = vdup_n_u8 (129);
+  uint8x8_t ybconst = vdup_n_u8 (25);
+  uint8x8_t cbrconst = vdup_n_u8 (38);
+  uint8x8_t cbgconst = vdup_n_u8 (75);
+  uint8x8_t cbbconst = vdup_n_u8 (112);
+  uint8x8_t crrconst = vdup_n_u8 (112);
+  uint8x8_t crgconst = vdup_n_u8 (94);
+  uint8x8_t crbconst = vdup_n_u8 (18);
+  int8x8_t yoffset = vdup_n_s8 (16);
+  int8x8_t cbcroffset = vdup_n_s8 (128);
   for (i = 0, u = 0; i < tempheight; i++) {
     // Even rows
-    for(j = 0, v = 0; j < tempwidth; j++){
-      // Even columns
-      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
-      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
-      cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
-      cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
-      j++; v++;
+    for(j = 0, v = 0; j < tempwidth; j += 8){
+      // Load 8 pixels into vectors and convert to signed integers
+      rtmp = vld1_u8((uint8_t *) &r[i][j]);
+      gtmp = vld1_u8((uint8_t *) &g[i][j]);
+      btmp = vld1_u8((uint8_t *) &b[i][j]);
 
-      // Odd columns
-      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      j++;
+      // y = 66 * r + 129 * g + 25 * b
+      ytmp = vreinterpretq_s16_u16(vmull_u8(rtmp, yrconst));
+      ytmp = vaddq_s16(vreinterpretq_s16_u16(vmull_u8(gtmp, ygconst)), ytmp);
+      ytmp = vaddq_s16(vreinterpretq_s16_u16(vmull_u8(btmp, ybconst)), ytmp);
 
-      // Even columns
-      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
-      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
-      cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
-      cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
-      j++; v++;
+      // cb = -38 * r - 75 * g + 112 * b
+      cbtmp = vreinterpretq_s16_u16(vmull_u8(btmp, cbbconst));
+      cbtmp = vsubq_s16(cbtmp, vreinterpretq_s16_u16(vmull_u8(rtmp, cbrconst)));
+      cbtmp = vsubq_s16(cbtmp, vreinterpretq_s16_u16(vmull_u8(gtmp, cbgconst)));
 
-      // Odd columns
-      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      j++;
+      // cr = 112 * r - 94 * g - 18 * b
+      crtmp = vreinterpretq_s16_u16(vmull_u8(rtmp, crrconst));
+      crtmp = vsubq_s16(crtmp, vreinterpretq_s16_u16(vmull_u8(gtmp, crgconst)));
+      crtmp = vsubq_s16(crtmp, vreinterpretq_s16_u16(vmull_u8(btmp, crbconst)));
 
-      // Even columns
-      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
-      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
-      cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
-      cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
-      j++; v++;
+      // y = (y >> 8) + 16; cb = (cb >> 8) + 128; cr = (cr >> 8) + 128;
+      yresult = vreinterpret_u8_s8(vadd_s8(vshrn_n_s16(ytmp, 8), yoffset));
+      cbresult = vreinterpret_u8_s8(vadd_s8(vshrn_n_s16(cbtmp, 8), cbcroffset));
+      crresult = vreinterpret_u8_s8(vadd_s8(vshrn_n_s16(crtmp, 8), cbcroffset));
 
-      // Odd columns
-      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      j++;
-
-      // Even columns
-      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
-      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
-      cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
-      cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
-      j++; v++;
-
-      // Odd columns
-      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      // Save vector to memory
+      vst1_u8 ((uint8_t *) &y[i][j], yresult);
+      cb[u][v] = vget_lane_u8(cbresult, 0);
+      cr[u][v++] = vget_lane_u8(crresult, 0);
+      cb[u][v] = vget_lane_u8(cbresult, 2);
+      cr[u][v++] = vget_lane_u8(crresult, 2);
+      cb[u][v] = vget_lane_u8(cbresult, 4);
+      cr[u][v++] = vget_lane_u8(crresult, 4);
+      cb[u][v] = vget_lane_u8(cbresult, 6);
+      cr[u][v++] = vget_lane_u8(crresult, 6);
     }
     for (; j < width; j++) {
-      rtmp = r[i][j]; gtmp = g[i][j]; btmp = b[i][j];
-      y[i][j]  = ((66 * rtmp + 129 * gtmp + 25 * btmp) >> 8) + 16;
+      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
       if ((j & 1) == 0) {
-        cb[u][v] = ((-38 * rtmp - 75 * gtmp + 112 * btmp) >> 8) + 128; 
-        cr[u][v] = ((112 * rtmp - 94 * gtmp - 18 * btmp) >> 8) + 128;
+        cb[u][v] = ((-38 * r[i][j] - 75 * g[i][j] + 112 * b[i][j]) >> 8) + 128; 
+        cr[u][v] = ((112 * r[i][j] - 94 * g[i][j] - 18 * b[i][j]) >> 8) + 128;
       }
     }
     i++; u++;
     
     // Odd rows
     for(j = 0; j < tempwidth; j++){
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+      // Load 8 pixels into vectors and convert to signed integers
+      rtmp = vld1_u8((uint8_t *) &r[i][j]);
+      gtmp = vld1_u8((uint8_t *) &g[i][j]);
+      btmp = vld1_u8((uint8_t *) &b[i][j]);
+
+      // y = 66 * r + 129 * g + 25 * b
+      ytmp = vreinterpretq_s16_u16(vmull_u8(rtmp, yrconst));
+      ytmp = vaddq_s16(vreinterpretq_s16_u16(vmull_u8(gtmp, ygconst)), ytmp);
+      ytmp = vaddq_s16(vreinterpretq_s16_u16(vmull_u8(btmp, ybconst)), ytmp);
+
+      // y = (y >> 8) + 16
+      yresult = vreinterpret_u8_s8(vadd_s8(vshrn_n_s16(ytmp, 8), yoffset));
+
+      // Save vector to memory
+      vst1_u8 ((uint8_t *) &y[i][j], yresult);
     }
     for (; j < width; j++) {
       y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
@@ -194,14 +207,21 @@ int main(int argc, char *argv[]) {
 
   if (height & 1) {
     for(j = 0; j < tempwidth; j++){
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j++]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
-      y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
+       // Load 8 pixels into vectors and convert to signed integers
+      rtmp = vld1_u8((uint8_t *) &r[i][j]);
+      gtmp = vld1_u8((uint8_t *) &g[i][j]);
+      btmp = vld1_u8((uint8_t *) &b[i][j]);
+
+      // y = 66 * r + 129 * g + 25 * b
+      ytmp = vreinterpretq_s16_u16(vmull_u8(rtmp, yrconst));
+      ytmp = vaddq_s16(vreinterpretq_s16_u16(vmull_u8(gtmp, ygconst)), ytmp);
+      ytmp = vaddq_s16(vreinterpretq_s16_u16(vmull_u8(btmp, ybconst)), ytmp);
+
+      // y = (y >> 8) + 16
+      yresult = vreinterpret_u8_s8(vadd_s8(vshrn_n_s16(ytmp, 8), yoffset));
+
+      // Save vector to memory
+      vst1_u8 ((uint8_t *) &y[i][j], yresult);
     }
     for (; j < width; j++) {
       y[i][j]  = ((66 * r[i][j] + 129 * g[i][j] + 25 * b[i][j]) >> 8) + 16;
